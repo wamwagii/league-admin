@@ -1,11 +1,12 @@
 "use client";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import { Subscribe } from "@tanstack/react-table";
 import { cn } from "cn";
-import { parse } from "date-fns";
-import { Check, Clock, MoreHorizontal, X } from "lucide-react";
+import { format } from "date-fns";
+import { MoreHorizontal } from "lucide-react";
 
-import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,105 +19,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { DataTableFeatures } from "@/lib/data-table-features";
 import { getInitials } from "@/lib/utils";
+import type { AdminUserRow } from "@/server/queries/admin-users";
 
-import { statusMeta, type UserRow } from "./data";
+const statusBadge: Record<AdminUserRow["status"], { label: string; className: string; dot: string }> = {
+  active: {
+    label: "Active",
+    className:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+  disabled: {
+    label: "Disabled",
+    className: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300",
+    dot: "bg-rose-500",
+  },
+};
 
-function RoleCell({ role, team }: { role: string; team: string }) {
+function StatusBadge({ status }: { status: AdminUserRow["status"] }) {
+  const meta = statusBadge[status];
   return (
-    <div className="grid gap-0.5">
-      <span className="whitespace-nowrap">{role}</span>
-      <span className="text-muted-foreground text-xs">{team}</span>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: UserRow["status"] }) {
-  const meta = statusMeta[status];
-
-  return (
-    <Badge className={cn("gap-1.5 border px-2 py-1 font-medium", meta.badgeClass)} variant="outline">
-      <span className={cn("size-1.5 rounded-full", meta.dotClass)} />
-      {status}
+    <Badge variant="outline" className={cn("gap-1.5 px-2 py-1 font-medium", meta.className)}>
+      <span className={cn("size-1.5 rounded-full", meta.dot)} />
+      {meta.label}
     </Badge>
   );
 }
 
-function getAvatarTone(name: string) {
-  const tones = [
-    "[&_[data-slot=avatar-fallback]]:bg-amber-100 [&_[data-slot=avatar-fallback]]:text-amber-700 after:border-amber-200 dark:[&_[data-slot=avatar-fallback]]:bg-amber-500/15 dark:[&_[data-slot=avatar-fallback]]:text-amber-300 dark:after:border-amber-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-orange-100 [&_[data-slot=avatar-fallback]]:text-orange-700 after:border-orange-200 dark:[&_[data-slot=avatar-fallback]]:bg-orange-500/15 dark:[&_[data-slot=avatar-fallback]]:text-orange-300 dark:after:border-orange-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-rose-100 [&_[data-slot=avatar-fallback]]:text-rose-700 after:border-rose-200 dark:[&_[data-slot=avatar-fallback]]:bg-rose-500/15 dark:[&_[data-slot=avatar-fallback]]:text-rose-300 dark:after:border-rose-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-pink-100 [&_[data-slot=avatar-fallback]]:text-pink-700 after:border-pink-200 dark:[&_[data-slot=avatar-fallback]]:bg-pink-500/15 dark:[&_[data-slot=avatar-fallback]]:text-pink-300 dark:after:border-pink-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-fuchsia-100 [&_[data-slot=avatar-fallback]]:text-fuchsia-700 after:border-fuchsia-200 dark:[&_[data-slot=avatar-fallback]]:bg-fuchsia-500/15 dark:[&_[data-slot=avatar-fallback]]:text-fuchsia-300 dark:after:border-fuchsia-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-purple-100 [&_[data-slot=avatar-fallback]]:text-purple-700 after:border-purple-200 dark:[&_[data-slot=avatar-fallback]]:bg-purple-500/15 dark:[&_[data-slot=avatar-fallback]]:text-purple-300 dark:after:border-purple-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-violet-100 [&_[data-slot=avatar-fallback]]:text-violet-700 after:border-violet-200 dark:[&_[data-slot=avatar-fallback]]:bg-violet-500/15 dark:[&_[data-slot=avatar-fallback]]:text-violet-300 dark:after:border-violet-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-indigo-100 [&_[data-slot=avatar-fallback]]:text-indigo-700 after:border-indigo-200 dark:[&_[data-slot=avatar-fallback]]:bg-indigo-500/15 dark:[&_[data-slot=avatar-fallback]]:text-indigo-300 dark:after:border-indigo-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-sky-100 [&_[data-slot=avatar-fallback]]:text-sky-700 after:border-sky-200 dark:[&_[data-slot=avatar-fallback]]:bg-sky-500/15 dark:[&_[data-slot=avatar-fallback]]:text-sky-300 dark:after:border-sky-500/20",
-    "[&_[data-slot=avatar-fallback]]:bg-emerald-100 [&_[data-slot=avatar-fallback]]:text-emerald-700 after:border-emerald-200 dark:[&_[data-slot=avatar-fallback]]:bg-emerald-500/15 dark:[&_[data-slot=avatar-fallback]]:text-emerald-300 dark:after:border-emerald-500/20",
-  ];
-
-  return tones[name.length % tones.length];
-}
-
-function getLastActiveBadge(lastActive: number) {
-  if (lastActive < 1) {
-    return {
-      className: "bg-green-600 text-green-950 [&>svg]:text-white",
-      icon: Check,
-    };
-  }
-
-  if (lastActive < 4 * 60) {
-    return {
-      className: "bg-amber-500 text-amber-950",
-      icon: Clock,
-    };
-  }
-
-  if (lastActive < 7 * 24 * 60) {
-    return {
-      className: "bg-destructive",
-      icon: null,
-    };
-  }
-
-  return {
-    className: "bg-muted-foreground text-muted",
-    icon: X,
-  };
-}
-
-function AvatarCell({ lastActive, name }: { lastActive: number; name: string }) {
-  const badge = getLastActiveBadge(lastActive);
-  const BadgeIcon = badge.icon;
-
-  return (
-    <Avatar size="lg" className={cn("font-medium", getAvatarTone(name))}>
-      <AvatarFallback>{getInitials(name)}</AvatarFallback>
-      <AvatarBadge className={badge.className}>{BadgeIcon ? <BadgeIcon /> : null}</AvatarBadge>
-    </Avatar>
-  );
-}
-
-function WorkspaceCell({ workspaces }: { workspaces: string[] }) {
-  const [firstWorkspace, ...remainingWorkspaces] = workspaces;
-  const remainingCount = remainingWorkspaces.length;
-
-  return (
-    <AvatarGroup className="*:data-[slot=avatar]:ring-0">
-      {firstWorkspace ? (
-        <Avatar className="after:rounded-sm">
-          <AvatarFallback className="rounded-sm ring-0">{getInitials(firstWorkspace)}</AvatarFallback>
-        </Avatar>
-      ) : null}
-      {remainingCount > 0 ? (
-        <AvatarGroupCount className="ring-card rounded-sm border">+{remainingCount}</AvatarGroupCount>
-      ) : null}
-    </AvatarGroup>
-  );
-}
-
-export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
+export const usersColumns: ColumnDef<DataTableFeatures, AdminUserRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -130,7 +59,7 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
         >
           {(checked) => (
             <Checkbox
-              aria-label="Select all users"
+              aria-label="Select all"
               checked={checked}
               onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             />
@@ -143,7 +72,7 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
         <Subscribe source={row.table.atoms.rowSelection} selector={(selection) => Boolean(selection?.[row.id])}>
           {(checked) => (
             <Checkbox
-              aria-label={`Select ${row.original.name}`}
+              aria-label={`Select ${row.original.display_name}`}
               checked={checked}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
             />
@@ -156,40 +85,24 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
   },
   {
     id: "search",
-    accessorFn: (row) => `${row.name} ${row.email}`,
+    accessorFn: (row) => `${row.display_name} ${row.email}`,
     filterFn: "includesString",
     enableHiding: true,
   },
   {
-    accessorKey: "name",
+    accessorKey: "display_name",
     header: "User",
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
-        <AvatarCell name={row.original.name} lastActive={row.original.lastActive} />
+        <Avatar size="lg" className="font-medium">
+          <AvatarFallback>{getInitials(row.original.display_name)}</AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
-          <div className="text-foreground truncate text-sm font-medium">{row.original.name}</div>
+          <div className="text-foreground truncate text-sm font-medium">{row.original.display_name}</div>
           <div className="text-muted-foreground truncate text-sm">{row.original.email}</div>
         </div>
       </div>
     ),
-  },
-  {
-    accessorKey: "role",
-    header: "Role / Team",
-    filterFn: "equalsString",
-    cell: ({ row }) => <RoleCell role={row.original.role} team={row.original.team} />,
-  },
-  {
-    accessorKey: "team",
-    header: "Team",
-    filterFn: "equalsString",
-    cell: ({ row }) => <div className="text-sm">{row.original.team}</div>,
-  },
-  {
-    accessorKey: "workspace",
-    header: "Workspace",
-    filterFn: "arrIncludes",
-    cell: ({ row }) => <WorkspaceCell workspaces={row.original.workspace} />,
   },
   {
     accessorKey: "status",
@@ -198,10 +111,12 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
-    id: "joinedDate",
-    accessorFn: (row) => parse(row.joinedDate, "dd MMM yyyy, h:mm a", new Date()).getTime(),
-    header: "Joined date",
-    cell: ({ row }) => <div className="text-foreground text-sm">{row.original.joinedDate}</div>,
+    id: "created_at",
+    accessorFn: (row) => new Date(row.created_at).getTime(),
+    header: "Created",
+    cell: ({ row }) => (
+      <div className="text-foreground text-sm">{format(new Date(row.original.created_at), "dd MMM yyyy, h:mm a")}</div>
+    ),
   },
   {
     id: "actions",
@@ -211,7 +126,7 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label={`Open actions for ${row.original.name}`}
+              aria-label={`Open actions for ${row.original.display_name}`}
               className="text-muted-foreground hover:bg-muted/50 size-8 rounded-md"
               size="icon-sm"
               variant="ghost"
@@ -220,12 +135,12 @@ export const usersColumns: ColumnDef<DataTableFeatures, UserRow>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View profile</DropdownMenuItem>
-            <DropdownMenuItem>Edit user</DropdownMenuItem>
-            <DropdownMenuItem>Manage team</DropdownMenuItem>
-            <DropdownMenuItem>Resend invite</DropdownMenuItem>
+            <DropdownMenuItem disabled>View profile</DropdownMenuItem>
+            <DropdownMenuItem disabled>Edit user</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">Deactivate user</DropdownMenuItem>
+            <DropdownMenuItem disabled variant="destructive">
+              Disable user
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
