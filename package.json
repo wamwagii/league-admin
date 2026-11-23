@@ -1,11 +1,11 @@
 {
-  "name": "studio-admin",
-  "version": "2.2.0",
+  "name": "league-admin",
+  "version": "0.1.0",
   "private": true,
+  "description": "Admin panel for multi-competition football league management.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "biome lint",
     "format": "biome format --write",
