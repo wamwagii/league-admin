@@ -1,36 +1,15 @@
-import Link from "next/link";
-
-import { siX } from "simple-icons";
-
-import { SimpleIcon } from "@/components/simple-icon";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { APP_CONFIG } from "@/config/app-config";
 
 export function SupportCard() {
+  const env = process.env.NODE_ENV === "production" ? "Production" : "Development";
+
   return (
     <Card size="sm" className="overflow-hidden shadow-none group-data-[collapsible=icon]:hidden">
       <CardHeader className="min-w-0 px-4">
-        <CardTitle className="truncate text-sm">Have something in mind?</CardTitle>
-        <CardDescription className="line-clamp-3">
-          Suggest a feature or discuss custom work with me on&nbsp;
-          <Link
-            href="https://x.com/arhamkhnz"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Reach out on X"
-            className="text-foreground inline-flex items-center"
-          >
-            <SimpleIcon icon={siX} aria-hidden className="fill-foreground size-3" />
-          </Link>
-          &nbsp;or by{" "}
-          <Link
-            href="https://github.com/arhamkhnz#want-to-connect"
-            target="_blank"
-            rel="noreferrer"
-            className="text-foreground hover:underline"
-          >
-            email
-          </Link>
-          .
+        <CardTitle className="truncate text-sm">{APP_CONFIG.name}</CardTitle>
+        <CardDescription className="truncate text-xs">
+          v{APP_CONFIG.version} · {env}
         </CardDescription>
       </CardHeader>
     </Card>
